@@ -1,0 +1,12 @@
+certifi==2018.8.24
+chardet==3.0.4
+idna==2.7
+pyasn1==0.4.2
+pyasn1-modules==0.2.1
+pycrypt==1.1.0
+pycryptodome==3.6.6
+pyparsing==2.2.2
+requests==2.19.1
+six==1.11.0
+ucsmsdk==0.9.4
+urllib3==1.23
