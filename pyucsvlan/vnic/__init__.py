@@ -2,10 +2,12 @@
 
 class Vnic:
 
-    def __init__(self):
-        name = None
-        vlans = None
-        managed_object = None
+    def __init__(self, ucs):
+        self.name = None
+        self.vlans = None
+        self.managed_object = None
+        self.ucs = ucs
+        print(ucs)
 
     def add_vlan(self):
         return self

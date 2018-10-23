@@ -8,8 +8,10 @@ class Vlan:
         id = 0
         managed_object = None
 
-    def add_lan_cloud(self):
+    def add_lan_cloud(self, ucs):
+        return self
 
-    def remove_lan_cloud(self):
+    def remove_lan_cloud(self, ucs):
+        return self
 
 
