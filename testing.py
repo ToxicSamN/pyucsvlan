@@ -1,6 +1,6 @@
 
-from pyucsvlan.credentials import Credential
-from pyucsvlan.ucs import Ucs
+from pyucs.credentials import Credential
+from pyucs.ucs import Ucs
 
 
 if __name__ == '__main__':
