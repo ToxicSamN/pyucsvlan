@@ -1,6 +1,6 @@
 
-from ucsmsdk.ucshandle import UcsHandle, UcsException, UcsSession
-import ucsmsdk.mometa as mometa
+from ucsmsdk.ucshandle import UcsHandle, UcsException
+from ucsmsdk import mometa
 
 
 class Ucs(UcsHandle):
@@ -57,7 +57,7 @@ class Ucs(UcsHandle):
                                   filter_str='(rn, "{}")'.format(rn)
                                   )
 
-    def _query_mo(self, class_id, chassis=None, slot=None, vlan_id=None, name=None, org=None, dn=None, rn=None):
+    def _query_mo(self, class_id, chassis=None, slot=None, vlan_id=None, name=None, service_profile=None, org=None, dn=None, rn=None):
         self._is_connected()
         if dn:
             return self.query_dn(dn=dn)
@@ -92,6 +92,11 @@ class Ucs(UcsHandle):
             return self.query_classid(class_id=class_id,
                                       filter_str='((slot_id, "{}"))'.format(slot))
 
+        if service_profile:
+            return self.query_classid(class_id=class_id,
+                                      filter_str='((dn, "{}"))'.format(service_profile.dn)
+                                      )
+
         return self.query_classid(class_id=class_id)
 
     def get_vnic_template(self, name=None, org=None, dn=None, rn=None):
@@ -102,6 +107,46 @@ class Ucs(UcsHandle):
                               dn=dn,
                               rn=rn
                               )
+
+    def get_vnic(self, service_profile=None, dn=None):
+        self._is_connected()
+        if not service_profile and not dn:
+            raise UcsException("Method 'get_vnic()' missing parameters.")
+
+        if service_profile and isinstance(service_profile, mometa.ls.LsServer.LsServer):
+            return self._query_mo(class_id='VnicEther',
+                                  service_profile=service_profile,
+                                  dn=dn
+                                  )
+        elif service_profile and isinstance(service_profile, str):
+            raise UcsException(
+                "InvalidType: Parameter 'service_profile' expected type 'ucsmsdk.mometa.ls.LsServer.LsServer' and recieved 'str'")
+
+        elif dn:
+            self._query_mo(class_id='VnicEther',
+                           dn=dn
+                           )
+        return self._query_mo(class_id='VnicEther')
+
+    def get_vhba(self, service_profile=None, dn=None):
+        self._is_connected()
+        if not service_profile and not dn:
+            raise UcsException("Method 'get_vhba()' missing parameters.")
+
+        if service_profile and isinstance(service_profile, mometa.ls.LsServer.LsServer):
+            return self._query_mo(class_id='VnicFc',
+                                  service_profile=service_profile,
+                                  dn=dn
+                                  )
+        elif service_profile and isinstance(service_profile, str):
+            raise UcsException(
+                "InvalidType: Parameter 'service_profile' expected type 'ucsmsdk.mometa.ls.LsServer.LsServer' and recieved 'str'")
+
+        elif dn:
+            self._query_mo(class_id='VnicFc',
+                           dn=dn
+                           )
+        return self._query_mo(class_id='VnicFc')
 
     def get_org(self, name=None, org=None, dn=None, rn=None):
         self._is_connected()
@@ -146,3 +191,37 @@ class Ucs(UcsHandle):
                               dn=dn,
                               rn=rn
                               )
+
+    def get_vnic_stats(self, vnic=None, service_profile=None):
+        self._is_connected()
+        if isinstance(service_profile, mometa.ls.LsServer.LsServer):
+            return self.get_vnic_stats(vnic=self.get_vnic(service_profile=service_profile))
+
+        if isinstance(vnic, mometa.vnic.VnicEther.VnicEther):
+            return self.query_dn("{}/vnic-stats".format(vnic.equipment_dn))
+
+        if isinstance(vnic, list) or isinstance(vnic, tuple):
+            tmp = []
+            for v in vnic:
+                tmp.append(self.get_vnic_stats(v))
+            return tmp
+
+        raise UcsException("InvalidType: Unexpected type with parameter 'vnic'."
+                           "Use type VnicEther or list/tuple of VnicEther")
+
+    def get_vhba_stats(self, vhba=None, service_profile=None):
+        self._is_connected()
+        if isinstance(service_profile, mometa.ls.LsServer.LsServer):
+            return self.get_vhba_stats(vhba=self.get_vhba(service_profile=service_profile))
+
+        if isinstance(vhba, mometa.vnic.VnicFc.VnicFc):
+            return self.query_dn("{}/vnic-stats".format(vhba.equipment_dn))
+
+        if isinstance(vhba, list) or isinstance(vhba, tuple):
+            tmp = []
+            for v in vhba:
+                tmp.append(self.get_vhba_stats(v))
+            return tmp
+
+        raise UcsException("InvalidType: Unexpected type with parameter 'vhba'."
+                           "Use type VnicFc or list/tuple of VnicFc")
