@@ -3,61 +3,11 @@ import sys
 import threading
 import logging
 import logging.handlers
+from pyucs.logging import Logger
 from influxdb import InfluxDBClient
 
 
-class Logger:
-
-    def __init__(self, log_file='/var/log/influxdb_client.log', error_log_file='/var/log/influxdb_client_err.log'):
-
-        self.loggers = {}
-        self.log_level = logging.INFO
-        self.log_file = log_file
-        self.error_log_file = error_log_file
-
-        self.formatter = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
-        self.logsize = 10 * 1048576
-        self.max_logs = 8
-
-    def get_logger(self, name):
-
-        if self.loggers.get(name):
-            return self.loggers.get(name)
-
-        logger = logging.getLogger(name)
-        logger.setLevel(self.log_level)
-
-        dfh = logging.StreamHandler(stream=sys.stdout)
-        dfh.setLevel(logging.DEBUG)
-        dfh.setFormatter(self.formatter)
-
-        lfh = logging.handlers.RotatingFileHandler(self.log_file,
-                                                   mode='a',
-                                                   maxBytes=self.logsize,
-                                                   backupCount=self.max_logs,
-                                                   encoding='utf8',
-                                                   delay=False)
-        lfh.setLevel(logging.INFO)
-        lfh.setFormatter(self.formatter)
-
-        efh = logging.handlers.RotatingFileHandler(self.error_log_file,
-                                                   mode='a',
-                                                   maxBytes=self.logsize,
-                                                   backupCount=self.max_logs,
-                                                   encoding='utf8',
-                                                   delay=False)
-        efh.setLevel(logging.ERROR)
-        efh.setFormatter(self.formatter)
-
-        logger.addHandler(lfh)
-        logger.addHandler(efh)
-
-        self.loggers.update({name: logger})
-
-        return logger
-
-
-LOGGERS = Logger()
+LOGGERS = Logger(log_file='/var/log/ucs_influx.log', error_log_file='/var/log/ucs_influx_err.log')
 
 
 class InfluxDB(object):

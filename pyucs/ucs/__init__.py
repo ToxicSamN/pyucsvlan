@@ -110,8 +110,6 @@ class Ucs(UcsHandle):
 
     def get_vnic(self, service_profile=None, dn=None):
         self._is_connected()
-        if not service_profile and not dn:
-            raise UcsException("Method 'get_vnic()' missing parameters.")
 
         if service_profile and isinstance(service_profile, mometa.ls.LsServer.LsServer):
             return self._query_mo(class_id='VnicEther',
@@ -130,8 +128,6 @@ class Ucs(UcsHandle):
 
     def get_vhba(self, service_profile=None, dn=None):
         self._is_connected()
-        if not service_profile and not dn:
-            raise UcsException("Method 'get_vhba()' missing parameters.")
 
         if service_profile and isinstance(service_profile, mometa.ls.LsServer.LsServer):
             return self._query_mo(class_id='VnicFc',
@@ -192,36 +188,45 @@ class Ucs(UcsHandle):
                               rn=rn
                               )
 
-    def get_vnic_stats(self, vnic=None, service_profile=None):
+    def get_vnic_stats(self, vnic=None, service_profile=None, ignore_error=False):
         self._is_connected()
         if isinstance(service_profile, mometa.ls.LsServer.LsServer):
-            return self.get_vnic_stats(vnic=self.get_vnic(service_profile=service_profile))
+            stats = self.get_vnic_stats(vnic=self.get_vnic(service_profile=service_profile), ignore_error=ignore_error)
+            if stats:
+                return stats
 
         if isinstance(vnic, mometa.vnic.VnicEther.VnicEther):
-            return self.query_dn("{}/vnic-stats".format(vnic.equipment_dn))
+            if vnic.equipment_dn:
+                return self.query_dn("{}/vnic-stats".format(vnic.equipment_dn))
 
         if isinstance(vnic, list) or isinstance(vnic, tuple):
             tmp = []
             for v in vnic:
-                tmp.append(self.get_vnic_stats(v))
+                if v.equipment_dn:
+                    tmp.append(self.get_vnic_stats(v, ignore_error=ignore_error))
             return tmp
+        if not ignore_error:
+            raise UcsException("InvalidType: Unexpected type with parameter 'vnic'."
+                               "Use type VnicEther or list/tuple of VnicEther")
 
-        raise UcsException("InvalidType: Unexpected type with parameter 'vnic'."
-                           "Use type VnicEther or list/tuple of VnicEther")
-
-    def get_vhba_stats(self, vhba=None, service_profile=None):
+    def get_vhba_stats(self, vhba=None, service_profile=None, ignore_error=False):
         self._is_connected()
         if isinstance(service_profile, mometa.ls.LsServer.LsServer):
-            return self.get_vhba_stats(vhba=self.get_vhba(service_profile=service_profile))
+            stats = self.get_vhba_stats(vhba=self.get_vnic(service_profile=service_profile), ignore_error=ignore_error)
+            if stats:
+                return stats
 
         if isinstance(vhba, mometa.vnic.VnicFc.VnicFc):
-            return self.query_dn("{}/vnic-stats".format(vhba.equipment_dn))
+            if vhba.equipment_dn:
+                return self.query_dn("{}/vnic-stats".format(vhba.equipment_dn))
 
         if isinstance(vhba, list) or isinstance(vhba, tuple):
             tmp = []
             for v in vhba:
-                tmp.append(self.get_vhba_stats(v))
+                if v.equipment_dn:
+                    tmp.append(self.get_vhba_stats(v, ignore_error=ignore_error))
             return tmp
 
-        raise UcsException("InvalidType: Unexpected type with parameter 'vhba'."
-                           "Use type VnicFc or list/tuple of VnicFc")
+        if not ignore_error:
+            raise UcsException("InvalidType: Unexpected type with parameter 'vhba'."
+                               "Use type VnicFc or list/tuple of VnicFc")
