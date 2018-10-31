@@ -1,6 +1,7 @@
 
 from ucsmsdk.ucshandle import UcsHandle, UcsException
 from ucsmsdk import mometa
+from pyucs.logging import Logger
 
 
 class Ucs(UcsHandle):
@@ -16,7 +17,6 @@ class Ucs(UcsHandle):
         self._default_classids = ('OrgOrg',
                                   'FabricChassisEp',
                                   'ComputeBlade',
-                                  'FabricVlan',
                                   'VnicLanConnTempl',
                                   'LsServer')
         self._query_classids = list(self._default_classids)
