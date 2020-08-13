@@ -31,6 +31,7 @@ def pool_func(pool_args):
 
 
 if __name__ == '__main__':
+
     queue_manager = multiprocessing.Manager()
     sq = queue_manager.Queue()
     iq = queue_manager.Queue()
