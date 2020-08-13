@@ -1,89 +1,58 @@
 
-import time
-import queue
-import multiprocessing
+import sys
+import logging
 from datetime import datetime
-from pyucs.credentials import Credential
-from pyucs.ucs import Ucs
-from pyucs.statsd.collector import StatsCollector
-from pyucs.statsd.parse import Parser
-from pyucs.influx import InfluxDB
+from logging import handlers
+from ucsvlan.vlan import UcsVlan
 
+formatter = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+# handler = logging.handlers.RotatingFileHandler('/var/log/ucs_debug.log',
+#                                                mode='a',
+#                                                maxBytes=8388608,
+#                                                backupCount=8,
+#                                                encoding='utf8',
+#                                                delay=False)
+# handler.setLevel(logging.DEBUG)
+# handler.setFormatter(formatter)
+# root.addHandler(handler)
 
-def q_watcher(q1, q2, out_q):
-    s_time = datetime.now()
-    while True:
-        time_delta = (datetime.now()) - s_time
-        if q1.qsize() > 0 or q2.qsize() > 0:
-            out_q.put_nowait("iq_size: {}, sq_size: {}".format(q1.qsize(), q2.qsize()))
+dh = logging.StreamHandler(stream=sys.stdout)
+dh.setLevel(logging.DEBUG)
+dh.setFormatter(formatter)
+root.addHandler(dh)
 
-        if time_delta.seconds > 60:
-            break
+vlan_id = 696
+vlan_name = 'v697_VCHB_17.78.16_29'
 
+try:
+    root.info('Start UcsVlan')
+    # ucs = UcsVlan(ucs=['uycs0319p03','ucs0319p05', 'ucs0319p06', 'ucs0319p07',
+    #                    'ucs0319p08', 'ucs0319p11', 'ucs0319p12',
+    #                    'ucs0319p15', 'ucs0319p16', 'ucs0319p20', 'ucs0319t04'])
+    ucs = UcsVlan(ucs=['ucs0319p03'])
+    print("break")
+    ucs.update_vlan_list({
+        vlan_id: vlan_name
+    })
+    # vlan_id = 4001
+    # vlan_name = 'v4001_prod_vlan_192.168.5.0_24'
+    # ucs.update_vlan_list({
+    #     vlan_id: vlan_name
+    # })
+    root.info('Add Vlan')
+    ucs.add_vlan(os_env='esx', env='all', sec_env='all')
+    root.info('Complete Add Vlan')
 
-def pool_func(pool_args):
-    ucs, data, data_type = pool_args
-
-    if data_type == 'vnic':
-        return ucs.get_vnic_stats(data)
-    elif data_type == 'vhba':
-        return ucs.get_vhba_stats(data)
-
-
-if __name__ == '__main__':
-
-    queue_manager = multiprocessing.Manager()
-    sq = queue_manager.Queue()
-    iq = queue_manager.Queue()
-    oq = queue_manager.Queue()
-    tq = queue_manager.Queue()
-
-    parse_proc = multiprocessing.Process(target=Parser, kwargs={'statsq': sq, 'influxq': iq})
-    influx_proc = multiprocessing.Process(target=InfluxDB, kwargs={'influxq': iq,
-                                                                            'host': 'y0319t11434',
-                                                                            'port': 8086,
-                                                                            'username': 'anonymous',
-                                                                            'password': 'anonymous',
-                                                                            'database': 'perf_stats',
-                                                                            'timeout': 5,
-                                                                            'retries': 3
-                                                                            }
-                                          )
-    parse_proc.start()
-    influx_proc.start()
-    watcher_proc = multiprocessing.Process(target=q_watcher, args=(iq, sq, oq,))
-    watcher_proc.start()
-
-    ucs_login = {
-        'ip': 'ucs0319t04'
-    }
-    ucs_login.update(
-        Credential('oppucs01').get_credential()
-    )
-
-    ucs = Ucs(**ucs_login)
-    tq.put_nowait("Start connect: {}".format(datetime.now()))
-    ucs.connect()
-    tq.put_nowait("Start statsd: {}".format(datetime.now()))
-    statsd = StatsCollector(ucs)
-    statsd.query_stats(sq)
-    tq.put_nowait("End statsd: {}".format(datetime.now()))
-
-    while watcher_proc.is_alive():
-        try:
-            data = oq.get_nowait()
-            print(data)
-        except queue.Empty:
-            pass
-
-    ucs.disconnect()
-    parse_proc.terminate()
-    influx_proc.terminate()
-    watcher_proc.terminate()
-    tq.put_nowait("End Program: {}".format(datetime.now()))
-
-    while True:
-        try:
-            print(tq.get_nowait())
-        except queue.Empty:
-            break
+    # root.info('Remove Vlan')
+    # # ucs = UcsVlan(ucs=['ucs0319p16', 'ucs0319p06', ])
+    # ucs = UcsVlan(ucs=['ucs0319t04',])
+    # ucs.update_vlan_list({
+    #     vlan_id: vlan_name
+    # })
+    # ucs.remove_vlan(os_env='esx', env='all', sec_env='all', remove_from_cloud=True)
+    root.info('Finished adding/removing vlan')
+except:
+    root.exception('Something went wrong')
+print()

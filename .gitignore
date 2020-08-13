@@ -115,6 +115,6 @@ ENV/
 # dev stuff:
 *environment.conf
 credstore_notes.txt
-*testing.py
-testing.py
-testing.py
+*testing*
+*testing
+testing/*
