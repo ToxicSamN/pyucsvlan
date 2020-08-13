@@ -112,5 +112,9 @@ ENV/
 *.p7b
 *.pem
 
+# dev stuff:
 *environment.conf
 credstore_notes.txt
+*testing*
+*testing
+testing/*
